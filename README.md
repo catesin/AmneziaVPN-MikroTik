@@ -1,10 +1,20 @@
-# AmneziaVPN + MikroTik
+# :boom: AmneziaVPN + MikroTik :boom:
 
 ![img](Demonstration/logo.png)
 
-В данном репозитории рассматривается работа MikroTik RouterOS V7.15.3+ с проектом [Amnezia VPN](https://github.com/amnezia-vpn). В процессе настройки, относительно вашего оборудования, следует выбрать вариант реализации с [контейнером](https://help.mikrotik.com/docs/display/ROS/Container) внутри RouterOS или без. 
-В репозитории присутствуют собранные контейнеры Docker в каталоге **"DImages"**.
-Способ без контейнера подойдёт к любому домашнему роутеру который хоть немного умеет работать с аналогичными в MikroTik адрес-листами или имеет расширенный функционал по маршрутизации.
+В данном репозитории рассматривается работа MikroTik RouterOS V7.15.3+ с проектом [Amnezia VPN](https://github.com/amnezia-vpn). В процессе настройки, относительно вашего оборудования, следует выбрать вариант реализации с [контейнером](https://help.mikrotik.com/docs/display/ROS/Container) внутри RouterOS или без контейнера. 
+
+В репозитории присутствуют готовые контейнеры Docker в каталоге **"Images"** которые можно сразу использовать внутри RouterOS. Контейнеры делятся на три архитектуры **ARM, ARM64 и x86**. Под каждую архитектуру собрано два контейнера с NAT и без NAT. Он нам нужен что бы использовать правило masquerade при передаче трафика через контейнер. Если настраивается прозрачная маршрутизация, NAT не обязателен.
+
+:point_right: Особенности контейнеров с NAT:
+1) Не требуют дополнительной настройки на стороне сервера VPS. 
+2) Более тяжеловесны. Может быть критично для некоторых устройств MikroTik с маленькой внутренней памятью.
+
+:point_right: Особенности контейнеров без NAT:
+1) Требуют [дополнительной](#MikroTik_container_3) настройки на стороне сервера VPS
+2) Более лёгкие по объёму 
+
+Вариант №2 без контейнера подойдёт к любому домашнему роутеру который хоть немного умеет работать с аналогичными в MikroTik адрес-листами или имеет расширенный функционал по маршрутизации.
 
 ------------
 
@@ -12,7 +22,7 @@
 * [Вариант №1. RouterOS с контейнером](#R_AWG)
 	- [Сборка контейнера на Windows](#MikroTik_container_1)
 	- [Настройка контейнера в RouterOS](#MikroTik_container_2)
-	- [Настройка серверной части](#MikroTik_container_3)
+	- [Настройка серверной части для контейнеров без NAT](#MikroTik_container_3)
 * [Вариант №2. RouterOS без контейнера](#RLA)
 	- [Установка Debian Linux](#MikroTik_linux_1)
 	- [Установка xrdp](#MikroTik_linux_2)
@@ -45,11 +55,14 @@ add address=10.0.0.0/8 list=RFC1918
 add address=172.16.0.0/12 list=RFC1918
 add address=192.168.0.0/16 list=RFC1918
 ```
+
+
 Добавим правила в mangle для address-list "RFC1918" и переместим его в самый верх правил
 ```
 /ip firewall mangle
 add action=accept chain=prerouting dst-address-list=RFC1918 in-interface-list=!WAN
 ```
+
 Добавим правила в mangle для address-list "to_vpn"
 ```
 /ip firewall mangle
@@ -73,12 +86,16 @@ add action=mark-routing chain=prerouting connection-mark=to-vpn-conn in-interfac
 Данный пункт настройки подходит только для устройств с архитектурой **ARM, ARM64 или x86**. Перед запуском контейнера в RouteOS убедитесь что у вас [включены контейнеры](https://help.mikrotik.com/docs/display/ROS/Container).  С полным списком устройств можно ознакомится [тут](https://mikrotik.com/products/matrix). [Включаем поддержку контейнеров в RouterOS](https://www.google.com/search?q=%D0%9A%D0%B0%D0%BA+%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C+%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D1%8B+%D0%B2+mikrotik&oq=%D0%BA%D0%B0%D0%BA+%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C+%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D1%8B+%D0%B2+mikrotik).
 Так же предполагается что на устройстве (или если есть USB порт с флешкой) имеется +- 70 Мбайт свободного места для разворачивания контейнера внутри RouterOS.
 
-**Где взять контейнер?** Его можно собрать самому из текущего репозитория в каталоге **"DContainers"** или скачать готовый образ из каталога "DImages".
+**Где взять контейнер?** Его можно собрать самому из текущего репозитория в каталоге **"Containers"** или скачать готовый образ из каталога **"Images"**.
+Скачав готовый образ [переходим сразу к настройке](#MikroTik_container_2).
+
+
 Для самостоятельной сборки следует установить подсистему Docker [buildx](https://github.com/docker/buildx?tab=readme-ov-file), "make" и "go".
 
 В текущем примере будем собирать на Windows:
 1) Скачиваем [Docker Desktop](https://docs.docker.com/desktop/) и устанавливаем
-2) Скачиваем нужный каталог для сборки из **"DContainers"** под вашу архитектуру RouterOS
+2) Скачиваем нужный архив с NAT или без NAT (различия описаны в начале статьи) для сборки из каталога **"Containers"** под вашу архитектуру RouterOS.
+3) Распаковываем архив
 3) Открываем CMD и переходим в распакованный каталог (cd <путь до каталога>)
 4) Запускаем Docker с ярлыка на рабочем столе (окно приложения должно просто висеть в фоне при сборке) и через cmd собираем контейнер под выбранную архитектуру RouterOS
 
@@ -86,26 +103,22 @@ add action=mark-routing chain=prerouting connection-mark=to-vpn-conn in-interfac
 - ARMv8 (arm64/v8) — спецификация 8-го поколения оборудования ARM, которое поддерживает архитектуры AArch32 и AArch64.
 - AMD64 (amd64) — это 64-битный процессор, который добавляет возможности 64-битных вычислений к архитектуре x86
 
-Для ARMv8 (DContainers\amnezia-wg-docker-master-arm64.tar)
+Для ARMv8 (Containers\amnezia-wg-docker-master-arm64.tar)
 ```
-docker buildx build --no-cache --platform linux/arm64/v8 --output=type=docker --tag docker-awg:latest .
-```
-
-Для ARMv7 (DContainers\amnezia-wg-docker-master-arm.tar)
-```
-docker buildx build --no-cache --platform linux/arm/v7 --output=type=docker --tag docker-awg:latest .
+docker buildx build --no-cache --platform linux/arm64/v8 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
 ```
 
-Для amd64 (DContainers\amnezia-wg-docker-master-amd64.tar)
+Для ARMv7 (Containers\amnezia-wg-docker-master-arm.tar)
 ```
-docker buildx build --no-cache --platform linux/amd64 --output=type=docker --tag docker-awg:latest .
+docker buildx build --no-cache --platform linux/arm/v7 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
 ```
 
-После завершения выполнения сборки выполняем сохранение в архив, находясь всё в том же каталоге
+Для amd64 (Containers\amnezia-wg-docker-master-amd64.tar)
 ```
-docker save docker-awg:latest > docker-awg.tar
+docker buildx build --no-cache --platform linux/amd64 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
 ```
-Осталось переместить данный архив в корень на RouterOS. 
+
+Осталось переместить появившийся архив "docker-awg.tar" в корень на RouterOS. 
 
 
 <a name='MikroTik_container_2'></a>
@@ -113,9 +126,13 @@ docker save docker-awg:latest > docker-awg.tar
 
 В текущем примере на устройстве MikroTik флешки нет. Хранить будем всё в корне.
 Если у вас есть USB порт и флешка, лучше размещать контейнер на ней. 
+
+:exclamation:**Если контейнер не запускается на флешке.**
+Например, вы хотите разместить контейнер в каталоге /usb1/docker/awg. Не создавайте заранее каталог awg на USB-флеш-накопителе. При создании контейнера добавьте в команду распаковки параметр "root-dir=usb1/docker/awg", в этом случае контейнер распакуется самостоятельно создав каталог /usb1/docker/awg и запустится без проблем.
+
 **Перемещаем собранный или готовый контейнер на диск устройства.**
 В текущем примере название контейнера будет "docker-awg.tar". 
-Если вы скачали готовый контейнер из каталога "DImages", переименуйте его для применения нижеследующих команд.
+Если вы скачали готовый контейнер из каталога **"Images"**, переименуйте его в "docker-awg.tar" для применения нижеследующих команд.
 
 В RouterOS выполняем:
 1) Создадим интерфейс для контейнера
@@ -123,22 +140,29 @@ docker save docker-awg:latest > docker-awg.tar
 /interface veth
 add address=172.18.20.2/30 gateway=172.18.20.1 gateway6="" name=docker-awg-veth
 ```
-2) Назначим на него IP адрес. IP 172.18.20.2 возьмёт себе контейнер, а 172.18.20.1 будет адрес RouterOS.
+
+2) Добавим правило в mangle для изменения mss для трафика, уходящего в контейнер. Поместите его после правила с RFC1918 (его мы создали ранее).
+```
+/ip firewall mangle
+add action=change-mss chain=forward new-mss=1360 out-interface=docker-awg-veth passthrough=yes protocol=tcp tcp-flags=syn tcp-mss=1453-6553
+```
+
+3) Назначим на созданный интерфейс IP адрес. IP 172.18.20.2 возьмёт себе контейнер, а 172.18.20.1 будет адрес RouterOS.
 ```
 /ip address
 add interface=docker-awg-veth address=172.18.20.1/30
 ```
-3) В таблице маршрутизации "r_to_vpn" создадим маршрут по умолчанию ведущий на контейнер
+4) В таблице маршрутизации "r_to_vpn" создадим маршрут по умолчанию ведущий на контейнер
 ```
 /ip route
 add distance=1 dst-address=0.0.0.0/0 gateway=172.18.20.2 routing-table=r_to_vpn
 ```
-4) Включаем masquerade для всего трафика, уходящего в контейнер.
+5) Включаем masquerade для всего трафика, уходящего в контейнер.
 ```
 /ip firewall nat
 add action=masquerade chain=srcnat out-interface=docker-awg-veth
 ```
-5) Создадим каталог в корне "wg"
+6) Создадим каталог в корне "wg"
 ```
 /file add type=directory name=wg
 ```
@@ -155,16 +179,16 @@ add action=masquerade chain=srcnat out-interface=docker-awg-veth
 
 ![img](Demonstration/1.png)
 
-6) Создадим каталог в корне "tmp". Для временных файлов контейнера.
+7) Создадим каталог в корне "tmp". Для временных файлов контейнера.
 ```
 /file add type=directory name=tmp
 ```
-7) Создадим запись "mounts" для проброса файла конфигурации клиента AWG в контейнер
+8) Создадим запись "mounts" для проброса файла конфигурации клиента AWG в контейнер
 ```
 /container mounts
 add dst=/etc/amnezia/amneziawg/ name=awg_conf src=/wg
 ```
-8) Теперь создадим сам контейнер
+9) Теперь создадим сам контейнер
 ```
 /container config
 set tmpdir=tmp
@@ -176,12 +200,12 @@ add hostname=amnezia interface=docker-awg-veth logging=yes start-on-boot=yes mou
 
 ![img](Demonstration/2.png)
 
-9) Запускаем контейнер через WinBox в разделе меню "container" и проверяем что туннель у нас поднялся. В логах MikroTik вы увидите характерные сообщения о запуске контейнера. 
+10) Запускаем контейнер через WinBox в разделе меню "container" и проверяем что туннель у нас поднялся. В логах MikroTik вы увидите характерные сообщения о запуске контейнера. 
 В окне терминала подключаемся к консоли самого контейнера
 ```
 /container shell 0
 ```
-10) **Проверка! Убедитесь что у вас появился поднятый интерфейс awg0 выполнив в контейнере**
+11) **Проверка! Убедитесь что у вас появился поднятый интерфейс awg0 выполнив в контейнере**
 ```
 ip a
 ```
@@ -191,14 +215,19 @@ ip a
 
 ![img](Demonstration/4.png)
 
+
+**Для контейнеров с NAT:**
+ :fire::fire::fire: Поздравляю! Настройка для вас завершена. Можно проверить доступность IP 8.8.4.4 из списка "to_vpn" (этот адрес мы добавили ранее).
+ 
+**Для контейнеров без NAT:**
 Теперь сетевые пакеты которые вы отправляете с рабочего места или с RouterOS на 8.8.4.4 (этот адрес ранее мы добавили в адрес-лист "to_vpn") будут проходить правило masquerade и заворачиваться на контейнер.
- Наши сетевые пакеты доходят до адреса назначения 8.8.4.4 и возвращаются до сервера AmneziaVPN, но дальше в туннель на наш контейнер в MikroTik уже не вернутся. 
- Тут дело в том, что сервер AmneziaVPN, запущенный так же в контейнере на удалённом VPS и к которому происходит подключение через AWG туннель, 
- знает что к нему подключился клиент с определённым IP адресом из сети 10.8.1.0/24, но ничего не знает про сеть 172.18.20.0/30, связующую наш роутер и контейнер. 
- Добавим её на стороне сервера в следующем разделе.
+Наши сетевые пакеты доходят до адреса назначения 8.8.4.4 и возвращаются до сервера AmneziaVPN, но дальше в туннель на наш контейнер в MikroTik уже не вернутся. 
+Тут дело в том, что сервер AmneziaVPN, запущенный так же в контейнере на удалённом VPS и к которому происходит подключение через AWG туннель, 
+знает что к нему подключился клиент с определённым IP адресом из сети 10.8.1.0/24, но ничего не знает про сеть 172.18.20.0/30, связующую наш роутер и контейнер. 
+Добавим её на стороне сервера в следующем разделе.
 
 <a name='MikroTik_container_3'></a>
-## Настройка серверной части AmneziaWG
+## Настройка серверной части AmneziaWG для контейнеров без NAT
 
 Предполагается что вы уже установили VPS сервер с AmneziaVPN и настроили протокол AmneziaWG через приложение. 
 Каждый протокол VPN запускается в своём контейнере. Нам остаётся найти его.
@@ -250,6 +279,9 @@ wg-quick up /opt/amnezia/awg/wg0.conf
 exit 
 exit 
 ```
+
+:fire::fire::fire:  **Поздравляю! Настройка завершена. Можно проверить доступность IP 8.8.4.4 из списка "to_vpn" (этот адрес мы добавили ранее).**
+
 Что мы получили в итоге? Прозрачную маршрутизацию до контейнера AmneziaWG на стороне сервера. 
 RouterOS отправляет помеченные соединения в контейнер=>контейнер заворачивает трафик в туннель AWG=>Контейнер AWG на стороне VPS сервера получая пакет.
 Благодаря нашему обратному маршруту 172.18.20.0/30 сервер будет знать куда ему отправлять пакеты в обратную сторону=> далее пакет проходит правила NAT и выходит в интернет.
