@@ -4,6 +4,8 @@
 
 В данном репозитории рассматривается работа MikroTik RouterOS V7.15.3+ с проектом [Amnezia VPN](https://github.com/amnezia-vpn). В процессе настройки, относительно вашего оборудования, следует выбрать вариант реализации с [контейнером](https://help.mikrotik.com/docs/display/ROS/Container) внутри RouterOS или без контейнера. 
 
+:school: Внимание! Инструкция среднего уровня сложности. Перед применением настроек вам необходимо иметь опыт в настройке MikroTik уровня сертификации MTCNA. 
+
 В репозитории присутствуют готовые контейнеры Docker в каталоге **"Images"** которые можно сразу использовать внутри RouterOS. Контейнеры делятся на три архитектуры **ARM, ARM64 и x86**. Под каждую архитектуру собрано два контейнера с NAT и без NAT. Он нам нужен что бы использовать правило masquerade при передаче трафика через контейнер. Если настраивается прозрачная маршрутизация, NAT не обязателен.
 
 :point_right: Особенности контейнеров с NAT:
@@ -63,18 +65,31 @@ add address=192.168.0.0/16 list=RFC1918
 add action=accept chain=prerouting dst-address-list=RFC1918 in-interface-list=!WAN
 ```
 
-Добавим правила в mangle для address-list "to_vpn"
+Добавим правило транзитного трафика в mangle для address-list "to_vpn"
 ```
 /ip firewall mangle
 add action=mark-connection chain=prerouting connection-mark=no-mark dst-address-list=to_vpn in-interface-list=!WAN \
     new-connection-mark=to-vpn-conn passthrough=yes
 ```
-Добавим правило отправляющее искать маршрут до узла назначения через таблицу маршрутизации "r_to_vpn", созданную на первом шаге
+Добавим правило для транзитного трафика отправляющее искать маршрут до узла назначения через таблицу маршрутизации "r_to_vpn", созданную на первом шаге
 ```
 add action=mark-routing chain=prerouting connection-mark=to-vpn-conn in-interface-list=!WAN new-routing-mark=r_to_vpn \
     passthrough=yes
 ```
 Маршрут по умолчанию в созданную таблицу маршрутизации "r_to_vpn" добавим чуть позже.
+
+:exclamation:Два выше обозначенных правила будут работать только для трафика, проходящего через маршрутизатор. 
+Если вы хотите заворачивать трафик, генерируемый самим роутером (например команда ping 8.8.4.4 c роутера для проверки туннеля в контейнере), тогда добавляем ещё два правила (не обязательно). 
+Они должны находиться по порядку, следуя за выше обозначенными правилами.
+```
+/ip firewall mangle
+add action=mark-connection chain=output connection-mark=no-mark \
+    dst-address-list=to_vpn new-connection-mark=to-vpn-conn-local \
+    passthrough=yes
+add action=mark-routing chain=output connection-mark=to-vpn-conn-local \
+    new-routing-mark=r_to_vpn passthrough=yes
+```
+
 
 ------------
 <a name='R_AWG'></a>
