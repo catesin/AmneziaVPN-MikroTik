@@ -106,39 +106,68 @@ add action=mark-routing chain=output connection-mark=to-vpn-conn-local \
 
 ### Инфомация по сборке будет актуализирована для Linux
 
-**Где взять контейнер?** Его можно собрать самому из текущего репозитория в каталоге **"Containers"** или скачать готовый образ из каталога **"Images"**.
+**Где взять контейнер?** Его можно собрать самому из текущего репозитория в каталоге **"Container"** или скачать готовый образ из каталога **"Images"**.
 Скачав готовый образ [переходим сразу к настройке](#MikroTik_container_2).
 
+Для самостоятельной сборки следует установить подсистему Docker (https://docs.docker.com/desktop/setup/install/linux/) и buildx (https://github.com/docker/buildx?tab=readme-ov-file).
 
-Для самостоятельной сборки следует установить подсистему Docker [buildx](https://github.com/docker/buildx?tab=readme-ov-file), "make" и "go".
-
-В текущем примере будем собирать на Windows:
-1) Скачиваем [Docker Desktop](https://docs.docker.com/desktop/) и устанавливаем
-2) Скачиваем нужный архив с NAT или без NAT (различия описаны в начале статьи) для сборки из каталога **"Containers"** под вашу архитектуру RouterOS.
-3) Распаковываем архив
-3) Открываем CMD и переходим в распакованный каталог (cd <путь до каталога>)
-4) Запускаем Docker с ярлыка на рабочем столе (окно приложения должно просто висеть в фоне при сборке) и через cmd собираем контейнер под выбранную архитектуру RouterOS
+В текущем примере будем собирать на Debian 12
+1) Скачиваем [Docker](https://docs.docker.com/desktop/setup/install/linux/debian/) и устанавливаем
+2) Скачиваем каталог **"Container"**
+3) Открываем Shell и переходим в скачанный каталог (cd <путь до каталога>)
+4) Запускаем скрипт **build.sh** и дожидаемся окончания сборки. Скрипту необходимо передпть как минимум один параметр - архитектура целевого образа. Скрипт собирает под архитектуры:
 
 - ARMv7 (arm/v7) — спецификация 7-го поколения оборудования ARM, которое поддерживает только архитектуру AArch32. 
 - ARMv8 (arm64/v8) — спецификация 8-го поколения оборудования ARM, которое поддерживает архитектуры AArch32 и AArch64.
 - AMD64 (amd64) — это 64-битный процессор, который добавляет возможности 64-битных вычислений к архитектуре x86
 
-Для ARMv8 (Containers\amnezia-wg-docker-master-arm64.tar)
+Для ARMv8 
 ```
-docker buildx build --no-cache --platform linux/arm64/v8 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
-```
-
-Для ARMv7 (Containers\amnezia-wg-docker-master-arm.tar)
-```
-docker buildx build --no-cache --platform linux/arm/v7 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
+./build.sh arm64
 ```
 
-Для amd64 (Containers\amnezia-wg-docker-master-amd64.tar)
+Для ARMv7
 ```
-docker buildx build --no-cache --platform linux/amd64 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
+./build.sh arm
 ```
 
-Осталось переместить появившийся архив "docker-awg.tar" в корень на RouterOS. 
+Для amd64
+```
+./build.sh amd64
+```
+
+В том случае, если вы хотите собрать облегченный образ без NAT (#MikroTik_container_3), то скрипт принимает параметр **no_nat**, тогда команды для сборки соответственно:
+
+Для ARMv8 без NAT
+```
+./build.sh arm64 no_nat
+```
+
+Для ARMv7 без NAT
+```
+./build.sh arm no_nat
+```
+
+Для amd64 без NAT
+```
+./build.sh amd64 no_nat
+```
+
+Сборка контейнера по умолчанию производится с образом Alpine Linux 3.21. Если по каким-то причинам необходимо сохранить ранее использовавшийся образ Alpine Linux 3.20, то скрипт принимает параметр **3.20**. Образцы команды:
+
+Для ARMv8 с образом 3.20
+```
+./build.sh arm64 3.20
+```
+
+Для ARMv8 без NAT с образом 3.20
+```
+./build.sh arm64 no_nat 3.20
+```
+
+Сборка 3.20 для других архитектур производится аналогично.
+
+Осталось переименовать появившийся в папке Images архив "docker-awg-*.tar" в "docker-awg.tar" и переместить в корень на RouterOS. 
 
 
 <a name='MikroTik_container_2'></a>
@@ -177,11 +206,18 @@ add interface=docker-awg-veth address=172.18.20.1/30
 /ip route
 add distance=1 dst-address=0.0.0.0/0 gateway=172.18.20.2 routing-table=r_to_vpn
 ```
-5) Включаем masquerade для всего трафика, уходящего в контейнер.
+5.1) Включаем masquerade для всего трафика, уходящего в контейнер.
 ```
 /ip firewall nat
 add action=masquerade chain=srcnat out-interface=docker-awg-veth
 ```
+
+5.2) В том случае, если контейнер разворачивается не на роутере, смотрящем в интернет, то включаем masquerade для трафика контейнера
+```
+/ip firewall nat
+add action=masquerade chain=srcnat src-address=172.18.20.0/30 out-interface=bridge
+```
+
 6) Создадим каталог в корне "wg"
 ```
 /file add type=directory name=wg
