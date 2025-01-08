@@ -111,11 +111,11 @@ function func_main() {
         echo ""
     fi
 
-    if [ ! -d "./images" ]; then
-        mkdir ./images
+    if [ ! -d "../Images" ]; then
+        mkdir ../Images
     fi
 
-    docker buildx build --no-cache --platform linux/$ARCH --output=type=docker --tag docker-awg:$ARCH-$NO_NAT-$ALPINE . && docker save docker-awg:$ARCH-$NO_NAT-$ALPINE > ./images/docker-awg-$ARCH-$NO_NAT-$ALPINE.tar
+    docker buildx build --no-cache --platform linux/$ARCH --output=type=docker --tag docker-awg:$ARCH-$NO_NAT-$ALPINE . && docker save docker-awg:$ARCH-$NO_NAT-$ALPINE > ../Images/docker-awg-$ARCH-$NO_NAT-$ALPINE.tar
 }
 
 func_main $@
