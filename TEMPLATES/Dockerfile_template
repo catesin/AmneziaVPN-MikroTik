@@ -1,0 +1,57 @@
+######
+# # In case of cross-compilaition for ARM do not forget to install emulator
+# docker run --privileged --rm tonistiigi/binfmt --install arm64,arm
+######
+
+ARG ALPINE_VERSION=3.21
+ARG GOLANG_VERSION=1.24rc1
+ARG TARGETOS TARGETARCH
+
+#--------------------------------Builder--------------------------------
+
+FROM golang:${GOLANG_VERSION}-alpine${ALPINE_VERSION} AS builder
+
+RUN <<EOF
+apk update && apk add --no-cache git make bash build-base linux-headers
+git clone https://github.com/amnezia-vpn/amneziawg-go.git
+git clone https://github.com/amnezia-vpn/amneziawg-tools.git
+cd /go/amneziawg-go && GOOS=${TARGETOS} GOARCH=${TARGETARCH} make
+cd /go/amneziawg-tools/src && GOOS=${TARGETOS} GOARCH=${TARGETARCH} make
+EOF
+
+#--------------------------------Image--------------------------------
+
+FROM alpine:${ALPINE_VERSION}
+RUN <<EOF
+apk update && apk add --no-cache bash openrc iptables ip6tables iptables-legacy iproute2 openresolv
+mkdir -p /etc/amnezia/amneziawg/
+EOF
+
+COPY --from=builder /go/amneziawg-go/amneziawg-go /usr/bin/amneziawg-go
+COPY --from=builder /go/amneziawg-tools/src/wg /usr/bin/awg
+COPY --from=builder /go/amneziawg-tools/src/wg-quick/linux.bash /usr/bin/awg-quick
+COPY wg-quick /etc/init.d/
+
+RUN <<EOF
+sed -i 's/^\(tty\d\:\:\)/#\1/' /etc/inittab
+sed -i -e 's/^#\?rc_env_allow=.*/rc_env_allow="\*"/' -e 's/^#\?rc_sys=.*/rc_sys="docker"/' /etc/rc.conf
+sed -i 's/cmd sysctl -q \(.*\?\)=\(.*\)/[[ "$(sysctl -n \1)" != "\2" ]] \&\& \0/' /usr/bin/awg-quick
+sed -i -e 's/VSERVER/DOCKER/' -e 's/checkpath -d "$RC_SVCDIR"/mkdir "$RC_SVCDIR"/' /usr/libexec/rc/sh/init.sh
+mv /usr/sbin/iptables /usr/sbin/iptables-new && ln -s /usr/sbin/iptables-legacy /usr/sbin/iptables
+mv /usr/sbin/ip6tables /usr/sbin/ip6tables-new && ln -s /usr/sbin/ip6tables-legacy /usr/sbin/ip6tables
+rm /etc/init.d/hwdrivers /etc/init.d/machine-id
+rc-update add wg-quick default
+
+echo -e " \nnet.ipv4.ip_forward = 1 \nnet.ipv6.conf.all.forwarding = 1 \n" | sed -e 's/^\s\+//g' | tee -a /etc/sysctl.conf && sysctl -p
+EOF
+
+ENTRYPOINT ["/sbin/init"]
+
+LABEL mount="Please mount awg0.conf while running with option --mount type=bind,src=(YOUR LOCATION),dst=/etc/amnezia/amneziawg/,ro"
+LABEL privileges="Use --privileged or combination of --cap-add=NET_ADMIN --device=/dev/net/tun to successfully run at amd64."
+
+#https://hub.docker.com/_/golang
+#https://hub.docker.com/_/alpine
+#https://github.com/tailscale/tailscale/issues/10540
+#https://github.com/tonistiigi/binfmt
+#https://github.com/docker/setup-qemu-action

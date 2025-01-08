@@ -1,0 +1,35 @@
+#!/sbin/openrc-run
+
+description="Amnezia WG Quick Up"
+
+depend() {
+    need localmount
+    need net
+}
+
+start_pre()
+{
+    iptables -F
+    iptables -t nat -F
+    iptables -t mangle -F
+    iptables -X
+    iptables -t nat -A POSTROUTING -o awg0 -j MASQUERADE
+}
+
+start() {
+    for file in $(grep '\[Interface\]' /etc/amnezia/amneziawg/*.conf -l 2>/dev/null); do
+        interface=$(basename $file .conf)
+        ebegin "Starting Amnezia WG interface $interface"
+        /usr/bin/awg-quick up $file
+    done
+    eend 0
+}
+
+stop() {
+    for file in $(grep '\[Interface\]' /etc/amnezia/amneziawg/*.conf -l 2>/dev/null); do
+        interface=$(basename $file .conf)
+        ebegin "Starting Amnezia WG interface $interface"
+        /usr/bin/awg-quick down $file
+    done
+    eend 0
+}
