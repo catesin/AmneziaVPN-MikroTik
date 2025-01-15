@@ -1,8 +1,8 @@
-# :boom: AmneziaVPN + MikroTik :boom:
+# :boom: AmneziaWG + MikroTik :boom:
 
 ![img](Demonstration/logo.png)
 
-В данном репозитории рассматривается работа MikroTik RouterOS V7.15.3+ с проектом [Amnezia VPN](https://github.com/amnezia-vpn). В процессе настройки, относительно вашего оборудования, следует выбрать вариант реализации с [контейнером](https://help.mikrotik.com/docs/display/ROS/Container) внутри RouterOS или без контейнера. 
+В данном репозитории рассматривается работа MikroTik RouterOS V7.16.2+ с проектом [Amnezia WG](https://docs.amnezia.org/ru/documentation/amnezia-wg/). В процессе настройки, относительно вашего оборудования, следует выбрать вариант реализации с [контейнером](https://help.mikrotik.com/docs/display/ROS/Container) внутри RouterOS или без контейнера. 
 
 :school: Внимание! Инструкция среднего уровня сложности. Перед применением настроек вам необходимо иметь опыт в настройке MikroTik уровня сертификации MTCNA. 
 
@@ -99,9 +99,9 @@ add action=mark-routing chain=output connection-mark=to-vpn-conn-local \
 ### Сборка контейнера на Windows
 
 Данный пункт настройки подходит только для устройств с архитектурой **ARM, ARM64 или x86**. Перед запуском контейнера в RouteOS убедитесь что у вас [включены контейнеры](https://help.mikrotik.com/docs/display/ROS/Container).  С полным списком устройств можно ознакомится [тут](https://mikrotik.com/products/matrix). [Включаем поддержку контейнеров в RouterOS](https://www.google.com/search?q=%D0%9A%D0%B0%D0%BA+%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C+%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D1%8B+%D0%B2+mikrotik&oq=%D0%BA%D0%B0%D0%BA+%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C+%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D1%8B+%D0%B2+mikrotik).
-Так же предполагается что на устройстве (или если есть USB порт с флешкой) имеется +- 70 Мбайт свободного места для разворачивания контейнера внутри RouterOS.
+Так же предполагается что на устройстве (или если есть USB порт с флешкой) имеется +- 70 Мбайт свободного места для разворачивания контейнера внутри RouterOS. Если места не хватает, его можно временно расширить [за счёт оперативной памяти](https://www.youtube.com/watch?v=uZKTqRtXu4M). После перезагрузки RouterOS, всё что находится в RAM, стирается. 
 
-**Где взять контейнер?** Его можно собрать самому из текущего репозитория в каталоге **"Containers"** или скачать готовый образ из каталога **"Images"**.
+**Где взять контейнер?** Его можно собрать самому из текущего репозитория каталога **"Containers"** или скачать готовый образ под выбранную архитектуру из каталога **"Images"**.
 Скачав готовый образ [переходим сразу к настройке](#MikroTik_container_2).
 
 
@@ -120,20 +120,20 @@ add action=mark-routing chain=output connection-mark=to-vpn-conn-local \
 
 Для ARMv8 (Containers\amnezia-wg-docker-master-arm64.tar)
 ```
-docker buildx build --no-cache --platform linux/arm64/v8 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
+docker buildx build --build-arg ARCHITECTURE=arm64 --no-cache --progress=plain --platform linux/arm64/v8 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
 ```
 
 Для ARMv7 (Containers\amnezia-wg-docker-master-arm.tar)
 ```
-docker buildx build --no-cache --platform linux/arm/v7 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
+docker buildx build --build-arg ARCHITECTURE=arm --no-cache --progress=plain --platform linux/arm/v7 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
 ```
 
 Для amd64 (Containers\amnezia-wg-docker-master-amd64.tar)
 ```
-docker buildx build --no-cache --platform linux/amd64 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
+docker buildx build --build-arg ARCHITECTURE=amd64 --no-cache --progress=plain --platform linux/amd64 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
 ```
-
-Осталось переместить появившийся архив "docker-awg.tar" в корень на RouterOS. 
+Иногда процесс создания образа может подвиснуть из-за плохого соединения с интернетом. Следует повторно запустить сборку. 
+После окончания сборки, необходимо загрузить появившийся архив "docker-awg.tar" в корень на RouterOS. 
 
 
 <a name='MikroTik_container_2'></a>
@@ -482,4 +482,7 @@ add action=masquerade chain=srcnat routing-mark=r_to_vpn
 
 Теперь можно проверить трассировку до 8.8.4.4 Трафик должен уходить на Debian.
 IP адреса назначения, которые MikroTik завернёт в VPN, будут отправляться на Debian, а он в свою очередь завернёт трафик в туннель, который поднимет клиентское приложение AmneziaVPN.
+
+[Donate :sparkling_heart:](https://telegra.ph/Youre-making-the-world-a-better-place-01-14)
+
 
