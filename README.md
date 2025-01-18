@@ -23,6 +23,7 @@
 * [Преднастройка RouterOS](#Pre_edit)
 * [Вариант №1. RouterOS с контейнером](#R_AWG)
 	- [Сборка контейнера на Windows](#MikroTik_container_1)
+	- [Готовые контейнеры](#Build_ready)
 	- [Настройка контейнера в RouterOS](#MikroTik_container_2)
 	- [Настройка серверной части для контейнеров без NAT](#MikroTik_container_3)
 * [Вариант №2. RouterOS без контейнера](#RLA)
@@ -101,6 +102,7 @@ add action=mark-routing chain=output connection-mark=to-vpn-conn-local \
 Данный пункт настройки подходит только для устройств с архитектурой **ARM, ARM64 или x86**. Перед запуском контейнера в RouteOS убедитесь что у вас [включены контейнеры](https://help.mikrotik.com/docs/display/ROS/Container).  С полным списком устройств можно ознакомится [тут](https://mikrotik.com/products/matrix). [Включаем поддержку контейнеров в RouterOS](https://www.google.com/search?q=%D0%9A%D0%B0%D0%BA+%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C+%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D1%8B+%D0%B2+mikrotik&oq=%D0%BA%D0%B0%D0%BA+%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C+%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D1%8B+%D0%B2+mikrotik).
 Так же предполагается что на устройстве (или если есть USB порт с флешкой) имеется +- 70 Мбайт свободного места для разворачивания контейнера внутри RouterOS. Если места не хватает, его можно временно расширить [за счёт оперативной памяти](https://www.youtube.com/watch?v=uZKTqRtXu4M). После перезагрузки RouterOS, всё что находится в RAM, стирается. 
 
+<a name='#Build_ready'></a>
 **Где взять контейнер?** Его можно собрать самому из текущего репозитория каталога **"Containers"** или скачать готовый образ под выбранную архитектуру из каталога **"Images"**.
 Скачав готовый образ [переходим сразу к настройке](#MikroTik_container_2).
 
