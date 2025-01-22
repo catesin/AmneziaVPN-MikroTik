@@ -120,17 +120,17 @@ add action=mark-routing chain=output connection-mark=to-vpn-conn-local \
 - ARMv8 (arm64/v8) — спецификация 8-го поколения оборудования ARM, которое поддерживает архитектуры AArch32 и AArch64.
 - AMD64 (amd64) — это 64-битный процессор, который добавляет возможности 64-битных вычислений к архитектуре x86
 
-Для ARMv8 (Containers\amnezia-wg-docker-master-arm64.tar)
+Для ARMv8
 ```
 docker buildx build --build-arg ARCHITECTURE=arm64 --no-cache --progress=plain --platform linux/arm64/v8 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
 ```
 
-Для ARMv7 (Containers\amnezia-wg-docker-master-arm.tar)
+Для ARMv7
 ```
 docker buildx build --build-arg ARCHITECTURE=arm --no-cache --progress=plain --platform linux/arm/v7 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
 ```
 
-Для amd64 (Containers\amnezia-wg-docker-master-amd64.tar)
+Для amd64
 ```
 docker buildx build --build-arg ARCHITECTURE=amd64 --no-cache --progress=plain --platform linux/amd64 --output=type=docker --tag docker-awg:latest . && docker save docker-awg:latest > docker-awg.tar
 ```
