@@ -36,7 +36,7 @@ eend 0
 stop() {
 for file in $(grep '\[Interface\]' /etc/amnezia/amneziawg/*.conf -l 2>/dev/null); do
 	interface=$(basename $file .conf)
-	ebegin "Stoping Amnezia WG interface $interface"
+	ebegin "Stopping Amnezia WG interface $interface"
 	/usr/bin/awg-quick down $file
 done
 eend 0

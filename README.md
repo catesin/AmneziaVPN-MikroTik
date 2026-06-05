@@ -4,7 +4,7 @@
 
 :dizzy: Аналог [XRay Vless Reality + MikroTik ](https://github.com/catesin/Xray-vless-reality-MikroTik)
 
-В данном репозитории рассматривается работа MikroTik RouterOS V7.21.3+ с проектом [Amnezia WG](https://docs.amnezia.org/ru/documentation/amnezia-wg/). В процессе настройки, относительно вашего оборудования, следует выбрать вариант реализации с [контейнером](https://help.mikrotik.com/docs/spaces/ROS/pages/84901929/Container) внутри RouterOS (Вариант №1) или без контейнера (Вариант №2). Второй вариант подойдёт к любому домашнему роутеру который хоть немного умеет работать с аналогичными в MikroTik адрес-листами или имеет расширенный функционал по маршрутизации.
+В данном репозитории рассматривается работа MikroTik RouterOS V7.23.1+ с проектом [Amnezia WG](https://docs.amnezia.org/ru/documentation/amnezia-wg/). В процессе настройки, относительно вашего оборудования, следует выбрать вариант реализации с [контейнером](https://help.mikrotik.com/docs/spaces/ROS/pages/84901929/Container) внутри RouterOS (Вариант №1) или без контейнера (Вариант №2). Второй вариант подойдёт к любому домашнему роутеру который хоть немного умеет работать с аналогичными в MikroTik адрес-листами или имеет расширенный функционал по маршрутизации.
 
 :white_check_mark: **Контейнеры поддерживают файл конфигурации для AmneziaWG 1.5 и 2.0** 
 Используйте в конфиге awg0.conf параметры I1-I5 при необходимости. Подробнее о версии 1.5 и 2.0 [тут](https://docs.amnezia.org/ru/documentation/instructions/new-amneziawg-selfhosted/).
